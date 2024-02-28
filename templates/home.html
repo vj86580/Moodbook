@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.8/firebase-firestore.js"></script>
+    <script src="https://kit.fontawesome.com/21006d2770.js" crossorigin="anonymous"></script> 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script> 
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="script" href ="{url_for('static' , filename='main.js')} "> 
+    <title>Memories Journal</title>
+</head>
+<body>
+    <div class="navbar">
+        <img src="{{ image_data }}" alt="Captured Image" class="profile-picture">
+        <div class="user-info">
+          <p class="user-name">Hello, {{ email }}</p>
+        </div>
+        <div class="logout-button">
+          <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+      </div>
+    <div id="app">
+        <div class="center">
+            <div class="journal-title">
+                <h2>Memories Journal</h2>
+            </div>
+            <div class="container">
+                <div class="filter-buttons">
+                    <button onclick="filterEntries('happy')" style="background-color: #efffcc; color: #000000;">Happy</button>
+                    <button onclick="filterEntries('sad')" style="background-color: #ccd7ff; color: #000000;">Sad</button>
+                    <button onclick="filterEntries('angry')" style="background-color: #ffcccc; color: #000000;">Angry</button>
+                    <button style="color: #000000;"><a href="/entries"></a>All</button>
+                </div>
+                
+                <div class="form-container">
+                    <div class="date-input">
+                      <label for="date">Date:</label>
+                      <input type="date" id="date" name="date" required><br><br>
+                      <label for="category">Category:</label>
+                      <select id="category" name="category" required>
+                      <option value="happy">Happy</option>
+                      <option value="sad">Sad</option>
+                      <option value="angry">Angry</option>
+                      </select><br><br>
+                      </div>
+                      <label for="email">Email:</label>
+                      <input type="email" id="email" name="email" required>
+                    
+
+                      <label for="feedback">Add your entry:</label><br><br>
+                      <textarea id="feedback" name="feedback" rows="10" cols="80" required></textarea><br><br>
+              
+                      <button type="submit" onclick="sendData()">Add Entry</button>
+                  </div>
+            
+                <div id="entryCards">
+                    <h1>Entries</h1>
+                    <ul>
+                        {% for entry in entries %}
+                            <li>Date: {{ entry.date }}</li>
+                            <li>Category: {{ entry.category }}</li>
+                            <li>Feedback: {{ entry.feedback }}</li>
+                            <li>Email: {{ entry.email }}</li>
+                            <br>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+<script type="text/javascript">
+    function sendData() {
+        event.preventDefault()
+        var dataToSend = {   
+            date: document.getElementById("date").value,
+            category: document.getElementById("category").value,
+            feedback: document.getElementById("feedback").value,
+            email: document.getElementById("email").value
+        };
+        $.ajax({
+            type: 'POST',
+            url: '/add_entry', //this shall match with the route in flask appli
+            data: JSON.stringify(dataToSend),
+            contentType: 'application/json',
+            success: function(response) {
+                console.log('Success:', response);
+                // Handle success here
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+                // Handle error here
+            }
+        });
+    }
+</script>
+    <div class="right">
+        <div class="quotes-card">
+            <div class="quotes-title">
+              <h4>Motivational Quotes</h4>
+            </div>
+            <p id="quote" style="font-size: small;">Click below to get inspired!</p>
+            <button id="quotes-button">Generate Quote</button>
+          </div>
+
+
+        <div class="media-card">
+            <div class="media-player">
+                <h4>Media Player</h4>
+            </div>
+            <img id="poster" src="" alt="Poster">
+            <div id="song-info">
+                <div id="song-title"></div>
+                <div id="artist-title"></div>
+            </div>
+            <div class="player-container">
+                <button id="prev-song"><i class="fa-solid fa-backward" style="color: #000000;"></i></button>
+                <button id="play-pause"><img src="{{url_for('static', filename='icons/play-solid.svg')}}" style="color: #000000;"></i></button>
+                <button id="next-song"><i class="fas fa-forward" style="color: #000000;"></i></button>
+            </div>
+            <audio id="audio" src="" controls style="display: none;"></audio>
+        </div>
+    
+    </div>
+
+    <div class="left">
+        
+        <div class="reminder-container">
+            <div class="rem-title">
+            <h4>Reminders</h4>
+            </div>
+            <div class="input-container">
+                <input type="date" id="reminder-date">
+            </div>
+            <div class="input-container">
+                <input type="text" id="reminder-input" placeholder="Enter a reminder">
+            </div>
+            <div class="input-container">
+                <button id="add-reminder">Add Reminder</button>
+            </div>
+            <ul id="reminder-list"></ul>
+            <div class="button-container">
+                <button id="delete-selected">Delete Selected</button>
+            </div>
+        </div>
+    
+        <div class="movie-container">
+            <div class="movie-header">
+                <h4>Movie Recommendations</h4>
+            </div>
+            <div class="movie-buttons-container">
+                <button onclick="filterMovies('happy');">Happy</button>
+                <button onclick="filterMovies('sad');">Sad</button>
+                <button onclick="filterMovies('angry');">Angry</button>
+            </div>
+            <div class="movie-display">
+                <img id="movie-poster" src="" alt="Movie Poster">
+                <p id="movie-name"></p>
+                <p id="movie-platform"></p> 
+            </div>
+            <div class="shuffle">
+                <button onclick="shuffleMovies()">Shuffle</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        
+
+//movies
+const movies = {
+    happy: [
+        { name: 'Yeh Jawani Hai Deewani', poster: 'https://upload.wikimedia.org/wikipedia/en/1/15/Yeh_jawani_hai_deewani.jpg', platform: 'Netflix', link: 'https://www.netflix.com/watch/70276515?trackId=255824129&tctx=0%2C0%2C3409f577-449f-4ec6-81ab-653ca1f30d26-218064740%2C3409f577-449f-4ec6-81ab-653ca1f30d26-218064740%7C2%2Cunknown%2C%2C%2CtitlesResults%2C%2CVideo%3A70276515%2CminiDpPlayButton'},
+        { name: 'Zindagi Na Milegi Dobaara', poster: 'https://upload.wikimedia.org/wikipedia/en/1/17/Zindagi_Na_Milegi_Dobara.jpg' , platform: 'Netflix', link: 'https://www.netflix.com/watch/70202336?trackId=255824129&tctx=0%2C4%2C3409f577-449f-4ec6-81ab-653ca1f30d26-218064740%2C3409f577-449f-4ec6-81ab-653ca1f30d26-218064740%7C2%2Cunknown%2C%2C%2CtitlesResults%2C70202336%2CVideo%3A70202336%2CminiDpPlayButton'},
+        { name: 'Jab We Met', poster: 'https://upload.wikimedia.org/wikipedia/en/9/9f/Jab_We_Met_Poster.jpg', platform: 'Amazon Prime' , link: 'https://www.primevideo.com/detail/0IZIGS3J12SA8YI4UQQT2OS4WY/ref=atv_dp_share_cu_r' },
+        { name: '3 Idiots', poster: 'https://upload.wikimedia.org/wikipedia/en/d/df/3_idiots_poster.jpg', platform: 'Amazon Prime', link: 'https://www.primevideo.com/detail/0LH1GMRIWABG6AFSW62O3BJJHH/ref=atv_dp_share_cu_r'},
+        { name: 'Dil Chahta Hai', poster: 'https://upload.wikimedia.org/wikipedia/en/d/db/Dil_Chahta_Hai.jpg', platform: 'Amazon Prime', link: 'https://www.primevideo.com/detail/0GUPSYRY1MTBUBAJMLTKNYIC7E/ref=atv_dp_share_cu_r' },
+        { name: 'How To Lose A Guy In 10 Days', poster: 'https://upload.wikimedia.org/wikipedia/en/0/07/HowToLoseAGuyimp.jpg', platform: 'Amazon Prime', link: 'https://www.primevideo.com/detail/0OWKPPM2CLM1ACK7N71QLK4Z1Z/ref=atv_dp_share_cu_r'},
+        { name: 'Princess Diaries', poster: 'https://upload.wikimedia.org/wikipedia/en/5/58/Princess_diaries_ver1.jpg' , platform: 'Disney + Hotstar', link: 'https://www.hotstar.com/in/movies/the-princess-diaries/1660010207/watch?filters=content_type%3Dmov'},
+        { name: 'Mean Girls', poster: 'https://upload.wikimedia.org/wikipedia/en/a/ac/Mean_Girls_film_poster.png', platform: 'Amazon Prime', link: 'https://www.primevideo.com/detail/0NHF5K8IX948GCFL9R43ROKLXM/ref=atv_dp_share_cu_r'},
+        { name: 'Crazy Rich Asians', poster: 'https://upload.wikimedia.org/wikipedia/en/b/ba/Crazy_Rich_Asians_poster.png', platform: 'Amazon Prime', link: 'https://www.primevideo.com/detail/0JP3DGQ8Z488GEWFGH215EJ7JI/ref=atv_dp_share_cu_r'},
+        { name: 'Legally Blonde', poster: 'https://upload.wikimedia.org/wikipedia/en/b/be/Legally_Blonde_film_poster.png', platform: 'Amazon Prime', link: 'https://www.primevideo.com/detail/0KVQ1ADLQB5EYD4FTDF4O2H0M9/ref=atv_dp_share_cu_r' },
+    ],
+    sad: [
+        { name: 'Taare Zameen Par', poster: 'https://upload.wikimedia.org/wikipedia/en/b/b4/Taare_Zameen_Par_Like_Stars_on_Earth_poster.png', platform:'Amazom Prime', link: 'https://www.netflix.com/watch/70087087?trackId=255824129&tctx=0%2C0%2C3409f577-449f-4ec6-81ab-653ca1f30d26-218763418%2C3409f577-449f-4ec6-81ab-653ca1f30d26-218763418%7C2%2Cunknown%2C%2C%2CtitlesResults%2C70087087%2CVideo%3A70087087%2CminiDpPlayButton' },
+        { name: 'Kal Ho Na Ho', poster: 'https://upload.wikimedia.org/wikipedia/en/4/45/Kal_Ho_Naa_Ho.jpg', platform:'Netflix', link: 'https://www.netflix.com/watch/60036735?trackId=255824129&tctx=0%2C1%2C19c6979b-7dc1-4651-b984-eeaa5b466ed5-272461741%2C19c6979b-7dc1-4651-b984-eeaa5b466ed5-272461741%7C2%2Cunknown%2C%2C%2CtitlesResults%2C60036735%2CVideo%3A60036735%2CminiDpPlayButton' },
+        { name: 'The Sky is Pink', poster: 'https://upload.wikimedia.org/wikipedia/en/9/93/The_Sky_Is_Pink.jpg', platform:'Netflix', link: 'https://www.netflix.com/watch/81037373?trackId=255824129&tctx=0%2C0%2C19c6979b-7dc1-4651-b984-eeaa5b466ed5-272481385%2C19c6979b-7dc1-4651-b984-eeaa5b466ed5-272481385%7C2%2Cunknown%2C%2C%2CtitlesResults%2C%2CVideo%3A81037373%2CminiDpPlayButton' },
+        { name: 'Neerja', poster: 'https://upload.wikimedia.org/wikipedia/en/a/aa/Neerja_Poster.jpg', platform:'Disney + Hotstar', link: 'https://www.hotstar.com/in/movies/neerja/1000090704/watch?filters=content_type%3Dmovie' },
+        { name: 'Rockstar', poster: 'https://upload.wikimedia.org/wikipedia/en/6/68/Rockstar-Movie-Poster.jpg', platform:'Amazom Prime', link: 'https://www.primevideo.com/detail/0GZ3XU9U7KA5M010TVE9JTKZ8Q/ref=atv_dp_share_cu_r'  },
+        { name: 'A Star is Born', poster: 'https://upload.wikimedia.org/wikipedia/en/3/39/A_Star_is_Born.png', platform:'Amazom Prime', link: 'https://www.primevideo.com/detail/0M2E28IPVX9DQ63NKYY003KMGH/ref=atv_dp_share_cu_r' },
+        { name: 'Titanic', poster: 'https://upload.wikimedia.org/wikipedia/en/1/18/Titanic_%281997_film%29_poster.png', platform:'Disney + Hotstar', link: 'https://www.hotstar.com/in/movies/titanic/1770001166/watch?filters=content_type%3Dmovie' },
+        { name: 'The Fault in our Stars', poster: 'https://upload.wikimedia.org/wikipedia/en/4/41/The_Fault_in_Our_Stars_%28Official_Film_Poster%29.png', platform:'Amazom Prime', link: 'https://www.primevideo.com/detail/0N4PPTYG213E3X6VWIRI6ORS8D/ref=atv_dp_share_cu_r' },
+        { name: 'Forrest Gump', poster: 'https://upload.wikimedia.org/wikipedia/en/6/67/Forrest_Gump_poster.jpg', platform:'Amazom Prime', link: 'https://www.primevideo.com/detail/0N4MXDSNJPO3YWLAF24N1NIHX0/ref=atv_dp_share_cu_r' },
+        { name: 'Me Before You', poster: 'https://upload.wikimedia.org/wikipedia/en/f/fd/Me_Before_You_%28film%29.jpg', platform:'Amazom Prime', link: 'https://www.primevideo.com/detail/0QSVLAIXBCD99WN7PJ33JTQZJJ/ref=atv_dp_share_cu_r' },
+    ],
+    angry: [
+        { name: 'Happy New Year', poster: 'https://upload.wikimedia.org/wikipedia/en/f/f0/Happy_New_Year_Poster_%282014_film%29.jpg', platform:'Netflix', link: 'https://www.netflix.com/watch/80017528?trackId=255824129&tctx=0%2C0%2C19c6979b-7dc1-4651-b984-eeaa5b466ed5-272698888%2C19c6979b-7dc1-4651-b984-eeaa5b466ed5-272698888%7C2%2Cunknown%2C%2C%2CtitlesResults%2C80017528%2CVideo%3A80017528%2CminiDpPlayButton' },
+        { name: 'Good Newws', poster: 'https://upload.wikimedia.org/wikipedia/en/7/76/Good_Newwz_film_poster.jpg', platform:'Amazon Prime', link: 'https://www.primevideo.com/detail/0TADXLVJKEHMYZ1SZS4DRS176C/ref=atv_dp_share_cu_r' },
+        { name: 'Ajab Prem Ki Gazab Kahani', poster: 'https://upload.wikimedia.org/wikipedia/en/6/67/Ajab_Prem_Ki_Ghazab_Kahani.jpg', platform:'Amazon Prime', link: 'https://www.primevideo.com/detail/0IE78NPPC8Z73BS41SOZSMTRDX/ref=atv_dp_share_cu_r'  },
+        { name: 'Rocky Aur Rani Ki Prem Kahani', poster: 'https://upload.wikimedia.org/wikipedia/en/6/65/Rocky_Aur_Rani_Ki_Prem_Kahani.jpg', platform:'Amazon Prime', link: 'https://www.primevideo.com/detail/0I6U0N56BVTVGY24EM2FARBNIC/ref=atv_dp_share_cu_r' },
+        { name: 'Bareilly Ki Barfi', poster: 'https://upload.wikimedia.org/wikipedia/en/9/97/Bareilly_Ki_Barfi_Poster.jpg', platform:'Netflix', link: 'https://www.netflix.com/watch/81016193?trackId=255824129&tctx=0%2C0%2C19c6979b-7dc1-4651-b984-eeaa5b466ed5-272892342%2C19c6979b-7dc1-4651-b984-eeaa5b466ed5-272892342%7C2%2Cunknown%2C%2C%2CtitlesResults%2C81016193%2CVideo%3A81016193%2CminiDpPlayButton' },
+        { name: 'Crazy Stupid Love', poster: 'https://upload.wikimedia.org/wikipedia/en/7/78/CrazyStupidLovePoster.jpg', platform:'Amazom Prime', link: 'https://www.primevideo.com/detail/0R5MEM01YMSKKG6W08OUT9OVNH/ref=atv_dp_share_cu_r' },
+        { name: 'Don\'t Look Up', poster: 'https://upload.wikimedia.org/wikipedia/en/5/5c/Don%27t_Look_Up_2021_film.jpg', platform:'Netflix', link: 'https://www.netflix.com/watch/81252357?trackId=255824129&tctx=0%2C0%2C19c6979b-7dc1-4651-b984-eeaa5b466ed5-272965334%2C19c6979b-7dc1-4651-b984-eeaa5b466ed5-272965334%7C2%2Cunknown%2C%2C%2CtitlesResults%2C%2CVideo%3A81252357%2CdetailsPagePlayButton' },
+        { name: 'Holidate', poster: 'https://upload.wikimedia.org/wikipedia/en/0/01/Holidate_film_poster.png', platform:'Amazom Prime', link: 'https://www.netflix.com/watch/81034553?trackId=255824129&tctx=2%2C16%2C19c6979b-7dc1-4651-b984-eeaa5b466ed5-273016979%2C19c6979b-7dc1-4651-b984-eeaa5b466ed5-273016979%7C2%2Cunknown%2C%2C%2CtitlesResults%2C81034553%2CVideo%3A81034553%2CminiDpPlayButton' },
+        { name: 'Murder Mystrey', poster: 'https://upload.wikimedia.org/wikipedia/en/1/19/Murder_Mystery_%28film%29.png', platform:'Amazom Prime', link: 'https://www.netflix.com/watch/80242619?trackId=255824129&tctx=0%2C0%2C19c6979b-7dc1-4651-b984-eeaa5b466ed5-273016979%2C19c6979b-7dc1-4651-b984-eeaa5b466ed5-273016979%7C2%2Cunknown%2C%2C%2CtitlesResults%2C%2CVideo%3A80242619%2CminiDpPlayButton' },
+        { name: '17 Again', poster: 'https://upload.wikimedia.org/wikipedia/en/e/e1/17again.jpg', platform:'Amazom Prime', link: 'https://www.primevideo.com/detail/0RRHTLMLHOQ3LG73X1YF5LNAWQ/ref=atv_dp_share_cu_r' },
+        // Add more angry movies as needed
+    ],
+    // Add more categories as needed
+};
+
+let currentCategory = 'happy';
+let currentMovieIndex = 0;
+
+function filterMovies(category) {
+    currentCategory = category;
+    currentMovieIndex = 0;
+    displayCurrentMovie();
+}
+
+function shuffleMovies() {
+    const shuffledMovies = shuffleArray(movies[currentCategory]);
+    movies[currentCategory] = shuffledMovies;
+    displayCurrentMovie();
+}
+
+function displayCurrentMovie() {
+    const movieDisplay = document.querySelector('.movie-display');
+    const moviePoster = document.getElementById('movie-poster');
+    const movieName = document.getElementById('movie-name');
+    const moviePlatform = document.getElementById('movie-platform');
+
+    if (movies[currentCategory].length > 0) {
+        const currentMovie = movies[currentCategory][currentMovieIndex];
+        moviePoster.src = currentMovie.poster;
+        movieName.textContent = currentMovie.name;
+        moviePlatform.textContent = `Platform: ${currentMovie.platform || 'Unknown'}`;
+
+        // Add click event to the movie poster
+        moviePoster.addEventListener('click', function () {
+            // Redirect to the movie link
+            window.location.href = currentMovie.link;
+        });
+    } else {
+        moviePoster.src = '';
+        movieName.textContent = 'No movies in this category';
+        moviePlatform.textContent = '';
+    }
+}
+function shuffleArray(array) {
+    const shuffledArray = [...array];
+    for (let i = shuffledArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]];
+    }
+    return shuffledArray;
+}
+
+// Initial display
+displayCurrentMovie();
+
+
+//media player
+const songs = [
+    { title: 'As It Was', artist: 'Harry Styles', file: '{{url_for('static', filename='songs/asitwas.mp3')}}', poster: '{{ url_for('static', filename='posters/aiw.jpg')}}' },
+    { title: 'Desi Girl', artist: 'Sunidhi Chauhan', file: '{{url_for('static', filename='songs/desigirl.mp3')}}', poster: '{{ url_for('static', filename='posters/dostana.jpg')}}' },
+    { title: 'Cruel Summer', artist: 'Taylor Swift',file: '{{url_for('static', filename='songs/cruelsummer.mp3')}}', poster: '{{ url_for('static', filename='posters/cruel.jpg')}}' },
+    { title: 'Call Me Maybe', artist: 'Carly Rae Jepson', file: '{{url_for('static', filename='songs/callmemaybe.mp3')}}', poster: '{{ url_for('static', filename='posters/callmemaybe.png')}}' },
+    { title: 'Dil Dhadakne Do', artist: 'Priyanka Chopra',file: '{{url_for('static', filename='songs/ddd.mp3')}}', poster: '{{ url_for('static', filename='posters/ddd.jpg')}}' },
+    { title: 'Baby', artist: 'Justin Bieber',  file: '{{url_for('static', filename='songs/baby.mp3')}}', poster: '{{ url_for('static', filename='posters/baby.jpg')}}' } ,
+    { title: 'What Jhumka', artist: 'Arijit Singh', file: '{{url_for('static', filename='songs/whatjhumka.mp3')}}', poster: '{{ url_for('static', filename='posters/rarkpk.jpg')}}' },
+    { title: 'On The Floor', artist: 'Jennifer Lopez', file: '{{url_for('static', filename='songs/onthefloor.mp3')}}', poster: '{{ url_for('static', filename='posters/onthefloor.png')}}' },
+    { title: 'Cupid', artist: 'Fifty Fifty', file: '{{url_for('static', filename='songs/cupid.mp3')}}', poster: '{{ url_for('static', filename='posters/cupid.png')}}'},
+    { title: 'Jaane Kyun', artist: 'Vishal Dadlani', file: '{{url_for('static', filename='songs/jaanekyun.mp3')}}', poster: '{{ url_for('static', filename='posters/dostana.jpg')}}' },
+    { title: 'Got Us Falling In Love', artist: 'Usher',file: '{{url_for('static', filename='songs/gufil.mp3')}}', poster: '{{ url_for('static', filename='posters/usher.jpg')}}' },
+    { title: 'Dilliwali Girlfriend', artist: 'Arijit Singh', file: '{{url_for('static', filename='songs/dg.mp3')}}', poster: '{{ url_for('static', filename='posters/yjhd.jpg')}}' },
+    { title: 'Stereo Hearts', artist: 'Gym Class Heros', file: '{{url_for('static', filename='songs/stereo.mp3')}}', poster: '{{ url_for('static', filename='posters/stereo.jpg')}}' },
+    { title: 'Kabhi Kabhi Aditi', artist: 'Rashid Ali', file: '{{url_for('static', filename='songs/kka.mp3')}}', poster: '{{ url_for('static', filename='posters/jtyjn.jpg')}}'},
+    { title: 'Rain Over Me', artist: 'Pitbull', file: '{{url_for('static', filename='songs/rainoverme.mp3')}}', poster: '{{ url_for('static', filename='posters/rainoverme.jpg')}}' },
+    { title: 'Give Me Everything', artist: 'Pitbull', file: '{{url_for('static', filename='songs/gee.mp3')}}', poster: '{{ url_for('static', filename='posters/giveme.jpg')}}' },
+    { title: 'Senorita', artist: 'Farhan Akhtar', file: '{{url_for('static', filename='songs/senorita.mp3')}}', poster: '{{ url_for('static', filename='posters/znmd.jpg')}}'},
+    { title: 'Eenie Meenie', artist: 'Justin Bieber', file: '{{url_for('static', filename='songs/eeniemeenie.mp3')}}', poster: '{{ url_for('static', filename='posters/eeniemeenie.jpg')}}' },
+
+];
+
+const playPauseButton = document.getElementById('play-pause');
+const nextButton = document.getElementById('next-song');
+const prevButton = document.getElementById('prev-song');
+const posterImg = document.getElementById('poster');
+const audio = document.getElementById('audio');
+const songTitle = document.getElementById('song-title');
+const artistTitle = document.getElementById('artist-title');
+
+let isPlaying = false;
+let currentSongIndex = 0;
+
+playPauseButton.addEventListener('click', function() {
+    if (isPlaying) {
+        pauseSong();
+    } else {
+        playSong();
+    }
+});
+
+nextButton.addEventListener('click', function() {
+    playNextSong();
+});
+
+prevButton.addEventListener('click', function() {
+    playPrevSong();
+});
+
+function playSong() {
+    isPlaying = true;
+    playPauseButton.innerHTML = '<i class="fa-solid fa-pause" style="color: #000000;"></i>';
+    posterImg.src = songs[currentSongIndex].poster;
+    audio.src = songs[currentSongIndex].file;
+    audio.play();
+    songTitle.textContent = songs[currentSongIndex].title;
+    artistTitle.textContent = songs[currentSongIndex].artist;
+}
+
+function pauseSong() {
+    isPlaying = false;
+    playPauseButton.innerHTML = '<i class="fa-solid fa-play" style="color: #000000;"></i>';
+    audio.pause();
+}
+
+function playNextSong() {
+    const randomIndex = getRandomIndex();
+    currentSongIndex = randomIndex;
+    playSong();
+}
+
+function getRandomIndex() {
+    let randomIndex;
+    do {
+        randomIndex = Math.floor(Math.random() * songs.length);
+    } while (randomIndex === currentSongIndex); // Ensure the next song is different from the current one
+    return randomIndex;
+}
+
+function playPrevSong() {
+    if (currentSongIndex > 0) {
+        currentSongIndex--;
+    } else {
+        currentSongIndex = songs.length - 1;
+    }
+    playSong();
+}
+
+playSong();
+
+
+//reminders
+document.getElementById('add-reminder').addEventListener('click', function() {
+    var reminderInput = document.getElementById('reminder-input');
+    var reminderDate = document.getElementById('reminder-date');
+    var reminderText = reminderInput.value.trim();
+    var dateValue = reminderDate.value.trim();
+    if (reminderText !== '' && dateValue !== '') {
+        var reminderList = document.getElementById('reminder-list');
+        var listItem = document.createElement('li');
+        var spanText = document.createElement('span');
+        spanText.textContent = reminderText + " (" + dateValue + ")";
+        listItem.appendChild(spanText);
+
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.addEventListener('change', function() {
+            spanText.style.textDecoration = checkbox.checked ? 'line-through' : 'none';
+        });
+        listItem.appendChild(checkbox);
+
+        reminderList.appendChild(listItem);
+        reminderInput.value = '';
+        reminderDate.value = '';
+    } else {
+        alert('Please enter both a reminder and a date.');
+    }
+});
+
+document.getElementById('delete-selected').addEventListener('click', function() {
+    var reminderList = document.getElementById('reminder-list');
+    var checkboxes = reminderList.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(function(checkbox) {
+        if (checkbox.checked) {
+            checkbox.parentElement.remove();
+        }
+    });
+});
+
+
+//quotes
+// Define an array of motivational quotes
+document.addEventListener('DOMContentLoaded', function() {
+const quotes = [
+    "The only way to do great work is to love what you do. – Steve Jobs",
+    "Believe you can and you're halfway there. – Theodore Roosevelt",
+    "The future belongs to those who believe in the beauty of their dreams. – Eleanor Roosevelt",
+    "Success is not final, failure is not fatal: It is the courage to continue that counts. – Winston Churchill",
+    "In the middle of difficulty lies opportunity. – Albert Einstein",
+    // Add more quotes as needed
+];
+
+// Function to generate a random quote and update the displayed quote
+function generateQuote() {
+    const quoteIndex = Math.floor(Math.random() * quotes.length);
+    const quote = quotes[quoteIndex];
+    document.getElementById('quote').textContent = quote;
+}
+
+// Attach an event listener to the "Generate Quote" button
+document.getElementById('quotes-button').addEventListener('click', generateQuote);
+
+// Initial quote generation on page load
+generateQuote();
+});
+//main journal
+var entries = [];
+        function addEntry() {
+            const entryDate = document.getElementById('entryDate').value;
+            const entryCategory = document.getElementById('entryCategory').value;
+            const entryText = document.getElementById('entryText').value;
+
+            //Use the email as a specific point (replace 'user@example.com' with the actual user's email)
+            const userEmail = 'user@example.com';
+
+            // Add entry to Firestore
+            db.collection('entries').add({
+            date: entryDate,
+            category: entryCategory,
+            text: entryText
+            })
+            .then(function(docRef) {
+            console.log("Entry added with ID: ", docRef.id);
+            // You can perform additional actions here if needed
+            })
+            .catch(function(error) {
+             console.error("Error adding entry: ", error);
+            });
+            console.log("hwkk")
+        }
+
+
+        function getEntries() {
+            db.collection('entries').get()
+            .then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    // Process each entry document
+                    const entryData = doc.data();
+                    console.log('Entry:', entryData);
+                    // Add logic to update UI with entry data
+                });
+            })
+            .catch((error) => {
+                console.error('Error getting entries: ', error);
+                // Add logic to handle errors
+            });
+        }
+
+        function deleteEntry(button) {
+            var entryCard = button.parentNode;
+            var entryIndex = Array.from(entryCard.parentNode.children).indexOf(entryCard);
+            entries.splice(entryIndex, 1);
+            entryCard.remove();
+        }
+
+        function filterEntries(category) {
+            var entryCards = document.querySelectorAll(".entry-card");
+            entryCards.forEach(function(card) {
+                if (card.classList.contains(category)) {
+                    card.style.display = "block";
+                } else {
+                    card.style.display = "none";
+                }
+            });
+        }
+
+        function resetFilter() {
+            var entryCards = document.querySelectorAll(".entry-card");
+            entryCards.forEach(function(card) {
+                card.style.display = "block";
+            });
+        }
+        //database
+        // Replace these with your own Firebase project configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCptmUgcwPuaAP984x3MhH0yo2XaHdpx_c",
+            authDomain: "moodbook-b8e17.firebaseapp.com",
+            projectId: "moodbook-b8e17",
+            storageBucket: "moodbook-b8e17.appspot.com",
+            messagingSenderId: "1004649882097",
+            appId: "1:1004649882097:web:3f51470bc69c6245f8a450"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Initialize Firestore
+        const db = firebase.firestore();
+
+    </script>
+</body>
+</html>
